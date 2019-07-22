@@ -1,0 +1,17 @@
+#ifndef __LED_H
+#define __LED_H
+#include "sys.h"
+
+//////////////////////////////////////////////////////////////////////////////////	 
+//STM32F4工程模板-库函数版本
+//淘宝店铺：http://mcudev.taobao.com									  
+////////////////////////////////////////////////////////////////////////////////// 	
+
+
+//LED端口定义
+#define LED0 PCout(13)	// D2
+#define LED1 PAout(7)	// D3	 
+
+void LED_Init(void);//初始化		 		
+extern void led0_task(void *pdata);
+#endif
