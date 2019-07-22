@@ -113,10 +113,3 @@ void start_task(void *pdata)
 	OSTaskSuspend(START_TASK_PRIO);	//挂起起始任务.
 	OS_EXIT_CRITICAL();				//退出临界区(可以被中断打断)
 } 
-
-
-
-
-
-
-
