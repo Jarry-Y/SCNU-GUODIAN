@@ -111,13 +111,13 @@ void HMI_task(void *pdata)
 		}
 		while(1)																				//等待串口屏数据透传就绪
 		{
-			if(HMI_FLAG != 1)
+			if(HMI_READY != 1)
 			{
 				delay_ms(5);
 			}
 			else
 			{
-				HMI_FLAG = 0;
+				HMI_READY = 0;
 				break;
 			}
 		}
