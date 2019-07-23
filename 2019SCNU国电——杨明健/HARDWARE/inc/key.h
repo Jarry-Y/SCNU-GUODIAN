@@ -21,6 +21,16 @@
 #define WK_UP 	PAin(0)		//PA0
 */
 
+#define L3 		PBout(7)  //PB7
+#define L2 		PBout(6)	//PB6 
+#define L1 		PBout(5)	//PB5
+#define L0 		PBout(4)	//PB4
+
+#define H3 		PBin(3)   //PB3
+#define H2 		PBin(2)		//PB2 
+#define H1 		PBin(1)		//PB1
+#define H0 		PBin(0)		//PB0
+
 
 #define KEY0_PRES 	1
 #define KEY1_PRES	2

@@ -104,7 +104,7 @@ void uart_init(u32 bound){
 
 void USART1_IRQHandler(void)                	//串口1中断服务程序
 {
-	u8 Res;
+	u8 Res,i;
 #ifdef OS_TICKS_PER_SEC	 	//如果时钟节拍数定义了,说明要使用ucosII了.
 	OSIntEnter();    
 #endif
@@ -149,6 +149,13 @@ void USART1_IRQHandler(void)                	//串口1中断服务程序
 			if(Res == 0xfd)				//接收到结束符0XFD
 			{
 				HMI_REC_LEN = USART_RX_CNT1;	//指令接收完毕
+				
+				for(i=0;i<HMI_REC_LEN;i++)
+				{
+					USART_SendData(USART1,USART_RX_BUF[i]);
+					while(USART_GetFlagStatus(USART1,USART_FLAG_TC)!=SET);//等待发送结束
+				}
+				
 				USART_RX_STA1	=	0;	//重新接收
 				USART_RX_CNT1 = 0;
 			}

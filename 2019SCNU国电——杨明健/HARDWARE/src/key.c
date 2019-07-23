@@ -19,10 +19,9 @@ void KEY_Init(void)
   GPIO_Init(GPIOB, &GPIO_InitStructure);//初始化GPIOB7,6,5,4
 	
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;//普通输入模式
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;//下拉
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_DOWN;//下拉
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_3|GPIO_Pin_2|GPIO_Pin_1|GPIO_Pin_0; //4位读键盘
   GPIO_Init(GPIOB, &GPIO_InitStructure);//初始化GPIOB3,2,1,0
- 
 } 
 
 /*函数名称:KEY_Scan
@@ -40,7 +39,9 @@ int KEY_Scan(void)
 	key = -1;
 	GPIOB->ODR = (GPIOB->ODR & 0xff0f) | 0x00f0;	//设置B7-B4为高电平
 	delay_us(10);				//给予充足反应时间
-	KeyLData = GPIOB->ODR & 0x000f;	//读B口低4位
+	//KeyLData = GPIOB->ODR & 0x000f;	//读B口低4位
+	//USART_SendData(USART1,PBin(2));
+	KeyLData = H3<<3|0|H1<<1|H0;	//读B口低4位，B2口有问题，无法下拉
 	if(KeyLData != 0x00)						//如果有按键按下
 	{
 		delay_ms(10);									//开始消抖				
@@ -49,9 +50,9 @@ int KEY_Scan(void)
 			KCC = 0x10;
 			for(j=0;j<4;j++)
 			{
-				GPIOB->ODR = (GPIOB->ODR & 0xffff) | KCC;	//按键输出引脚依次置高进行循环扫描
+				GPIOB->ODR = (GPIOB->ODR & 0xff0f) | KCC;	//按键输出引脚依次置高进行循环扫描
 				delay_us(10);		//给予充足反应时间
-				KeyLData = GPIOB->ODR & 0x000f;	//再次读B口低4位
+				KeyLData = H3<<3|0|H1<<1|H0;	//读B口低4位，B2口有问题，无法下拉
 				if(KeyLData != 0x00)					//找到键值
 				{
 					switch(KeyLData)						//键值转换
@@ -73,11 +74,16 @@ int KEY_Scan(void)
 
 //KEY任务
 void KEY_task(void *pdata)
-{	  
+{	 
+	int key = -1;
 	while(1)
 	{
 		//键盘扫描
-		KEY_Scan();
+		key = KEY_Scan();
+		if(key>=0)
+		{
+			USART_SendData(USART1,key);
+		}
 		delay_ms(60);                     //延时500ms
 	}
 }
