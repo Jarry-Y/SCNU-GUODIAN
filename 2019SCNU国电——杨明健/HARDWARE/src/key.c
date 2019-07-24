@@ -1,5 +1,6 @@
 #include "key.h"
-#include "delay.h" 
+#include "includes.h"
+
 //////////////////////////////////////////////////////////////////////////////////	 
 //STM32F4工程模板-库函数版本
 //淘宝店铺：http://mcudev.taobao.com							  
@@ -84,6 +85,11 @@ void KEY_task(void *pdata)
 		{
 			USART_SendData(USART1,key);
 		}
-		delay_ms(60);                     //延时500ms
+		//芯片驱动测试
+		//AD9854_SetSine(40000000,4095);//设置频率和幅值
+		//ADF4351WriteFreq(400);				//设置频率为400M
+		PE4302Set(15,1);		//设置PE4302衰减器衰减增益
+		
+		delay_ms(5);                     //延时60ms
 	}
 }

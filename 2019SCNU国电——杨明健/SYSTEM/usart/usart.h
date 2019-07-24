@@ -33,6 +33,8 @@ extern u8  USART_RX_BUF[USART_REC_LEN]; //½ÓÊÕ»º³å,×î´óUSART_REC_LEN¸ö×Ö½Ú.Ä©×Ö½
 extern u16 USART_RX_STA;         		//½ÓÊÕ×´Ì¬±ê¼Ç	
 extern u8  HMI_READY ;							//HMI´®¿ÚÆÁÊý¾ÝÍ¸´«¾ÍÐ÷±êÖ¾
 extern u8 HMI_REC_LEN;							//HMI´®¿ÚÆÁ½ÓÊÕÖ¸Áî³¤¶È
+extern float freq;									//ÐÅºÅÔ´ËùÐèµ÷½ÚÆµÂÊ
+void USART1_RXBUFF_HANDLE(void);		//´®¿Ú1½ÓÊÕ×Ö·ûÊý×é´¦Àíº¯Êý
 //Èç¹ûÏë´®¿ÚÖÐ¶Ï½ÓÊÕ£¬Çë²»Òª×¢ÊÍÒÔÏÂºê¶¨Òå
 void uart_init(u32 bound);
 #endif

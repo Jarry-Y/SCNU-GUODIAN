@@ -1,5 +1,6 @@
 #include "sys.h"
 #include "usart.h"	
+#include "math.h"
 ////////////////////////////////////////////////////////////////////////////////// 	 
 //如果使用ucos,则包括下面的头文件即可.
 #if SYSTEM_SUPPORT_UCOS
@@ -50,6 +51,7 @@ u16	USART_RX_CNT = 0;				//接收计数器
 u16 USART_RX_CNT1 = 0;      //接收计数器1	
 u8 HMI_READY = 0;						//HMI串口屏数据透传就绪标志
 u8 HMI_REC_LEN = 0;					//HMI串口屏接收指令长度
+float freq = 0;									//信号源所需调节频率
 
 //初始化IO 串口1 
 //bound:波特率
@@ -102,6 +104,8 @@ void uart_init(u32 bound){
 }
 
 
+
+
 void USART1_IRQHandler(void)                	//串口1中断服务程序
 {
 	u8 Res,i;
@@ -149,12 +153,12 @@ void USART1_IRQHandler(void)                	//串口1中断服务程序
 			if(Res == 0xfd)				//接收到结束符0XFD
 			{
 				HMI_REC_LEN = USART_RX_CNT1;	//指令接收完毕
-				
-				for(i=0;i<HMI_REC_LEN;i++)
-				{
-					USART_SendData(USART1,USART_RX_BUF[i]);
-					while(USART_GetFlagStatus(USART1,USART_FLAG_TC)!=SET);//等待发送结束
-				}
+//				for(i=0;i<HMI_REC_LEN;i++)
+//				{
+//					USART_SendData(USART1,USART_RX_BUF[i]);
+//					while(USART_GetFlagStatus(USART1,USART_FLAG_TC)!=SET);//等待发送结束
+//				}
+				USART1_RXBUFF_HANDLE();		//串口1接收字符数组处理函数
 				
 				USART_RX_STA1	=	0;	//重新接收
 				USART_RX_CNT1 = 0;
@@ -195,6 +199,66 @@ void USART1_IRQHandler(void)                	//串口1中断服务程序
 	OSIntExit();  											 
 #endif
 } 
+
+void USART1_RXBUFF_HANDLE(void)
+{
+	u8 i;
+	u8 	del_loc;			//小数点位置
+	u16 int_part;			//频率整数部分（MHz）
+	u8 	del_part;			//频率小数部分（MHz）
+	u16 dacval;				//dac电压（mV）
+	
+	del_loc = 0;
+	int_part = 0;
+	del_part = 0;
+	dacval = 0;
+	///////////////////////////////接收频率控制字///////////////////////////////////////////////////////
+	if(USART_RX_BUF[0]==0x0f)				//若首字符为0x0f，则调节信号源频率
+	{
+		for(i=1;i<HMI_REC_LEN;i++)		//遍历接收数组，找到小数点位置
+		{
+			if(USART_RX_BUF[i]==0x2E)		//找到小数点
+			{
+				del_loc = i;							//将当前数组下标赋给del_loc
+				break;
+			}
+			if(i==HMI_REC_LEN-1)				//如果找不到小数点
+			{
+				del_loc = HMI_REC_LEN;		
+			}
+		}
+		//找到小数点后将整数和小数部分从字符数组转为浮点型
+		for(i=1;i<del_loc;i++)				//整数部分
+		{
+			int_part += (USART_RX_BUF[i] - 0x30)*pow(10.0,(float)(del_loc-i-1));
+		}
+		freq = (float)int_part + (float)del_part/10.0;
+		//将调节频率送给AD9854或ADF4351
+		
+//		USART_SendData(USART1,int_part);
+//		while(USART_GetFlagStatus(USART1,USART_FLAG_TC)!=SET);//等待发送结束
+//		del_part = USART_RX_BUF[del_loc+1] - 0x30;	//小数部分，只取一位小数
+//		USART_SendData(USART1,del_part);
+//		while(USART_GetFlagStatus(USART1,USART_FLAG_TC)!=SET);//等待发送结束
+//		USART_SendData(USART1,freq);
+//		while(USART_GetFlagStatus(USART1,USART_FLAG_TC)!=SET);//等待发送结束
+	}
+	///////////////////////////////接收DAC控制字///////////////////////////////////////////////////////
+	if(USART_RX_BUF[0]==0x0d)				//若首字符为0x0d，则调节DAC电压
+	{
+		for(i=1;i<HMI_REC_LEN;i++)		//遍历接收数组，将字符数组转为u16类型
+		{
+			dacval += (USART_RX_BUF[i] - 0x30)*pow(10.0,(float)(HMI_REC_LEN-i-1));
+		}
+		Dac1_Set_Vol(dacval);																	//设置DAC输出电压
+		
+//		USART_SendData(USART1,dacval>>8);
+//		while(USART_GetFlagStatus(USART1,USART_FLAG_TC)!=SET);//等待发送结束
+//		USART_SendData(USART1,dacval);
+//		while(USART_GetFlagStatus(USART1,USART_FLAG_TC)!=SET);//等待发送结束
+	}
+}
+
 #endif	
 
  

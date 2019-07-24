@@ -471,6 +471,7 @@ void Oled_task(void *pdata)
 		//oled显示数据
 		Oled_Show(DB,Hz,input_hz,add_count);
 		delay_ms(20);                     //延时500ms
+		
 	}
 }
 

@@ -11,7 +11,7 @@ void PE4302_GPIO_Init(void)
 	 GPIO_InitStructure.GPIO_Pin = GPIO_Pin_15|GPIO_Pin_12|GPIO_Pin_14;				 //LED0-->PA.8 端口配置
 	 GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;//普通输出模式
 	 GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;//推挽输出
-	 GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;		 //IO口速度为50MHz
+	 GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;		 //IO口速度为50MHz
 	 GPIO_Init(GPIOB, &GPIO_InitStructure);					 //根据设定参数初始化GPIOA.8
 	 pe4302_LE1_1;
 	 pe4302_LE2_1;
