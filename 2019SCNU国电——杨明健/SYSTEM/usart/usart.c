@@ -51,7 +51,6 @@ u16	USART_RX_CNT = 0;				//接收计数器
 u16 USART_RX_CNT1 = 0;      //接收计数器1	
 u8 HMI_READY = 0;						//HMI串口屏数据透传就绪标志
 u8 HMI_REC_LEN = 0;					//HMI串口屏接收指令长度
-float freq = 0;									//信号源所需调节频率
 
 //初始化IO 串口1 
 //bound:波特率
@@ -203,16 +202,26 @@ void USART1_IRQHandler(void)                	//串口1中断服务程序
 void USART1_RXBUFF_HANDLE(void)
 {
 	u8 i;
-	u8 	del_loc;			//小数点位置
-	u16 int_part;			//频率整数部分（MHz）
-	u8 	del_part;			//频率小数部分（MHz）
+	u8 	del_loc;			//小数点位置					PLL
+	u16 int_part;			//频率整数部分（MHz）	PLL
+	u8 	del_part;			//频率小数部分（MHz）	PLL
+	u8 	del_loc_D;		//小数点位置					DDS
+	u16 int_part_D;		//频率整数部分（MHz）	DDS
+	u8 	del_part_D;		//频率小数部分（MHz）	DDS
 	u16 dacval;				//dac电压（mV）
+	float freq = 0;							//ADF4351信号源所需调节频率
+	float freq_D = 0;						//AD9851信号源频率
+	ulong freq_DDS = 0;
+	u8 	PEdb;					//PE4302衰减db
 	
 	del_loc = 0;
 	int_part = 0;
 	del_part = 0;
 	dacval = 0;
-	///////////////////////////////接收频率控制字///////////////////////////////////////////////////////
+	int_part_D = 0;
+	del_part_D = 0;
+	PEdb = 0;
+	///////////////////////////////接收ADF4351频率控制字///////////////////////////////////////////////////////
 	if(USART_RX_BUF[0]==0x0f)				//若首字符为0x0f，则调节信号源频率
 	{
 		for(i=1;i<HMI_REC_LEN;i++)		//遍历接收数组，找到小数点位置
@@ -232,19 +241,24 @@ void USART1_RXBUFF_HANDLE(void)
 		{
 			int_part += (USART_RX_BUF[i] - 0x30)*pow(10.0,(float)(del_loc-i-1));
 		}
+		if(!del_loc)
+		{
+			del_part = USART_RX_BUF[del_loc+1] - 0x30;	//小数部分，只取一位小数
+		}
 		freq = (float)int_part + (float)del_part/10.0;
-		//将调节频率送给AD9854或ADF4351
+		//将调节频率送给ADF4351
+		ADF4351_Init_some();
+		ADF4351WriteFreq(freq);				//设置频率
 		
 //		USART_SendData(USART1,int_part);
 //		while(USART_GetFlagStatus(USART1,USART_FLAG_TC)!=SET);//等待发送结束
-//		del_part = USART_RX_BUF[del_loc+1] - 0x30;	//小数部分，只取一位小数
 //		USART_SendData(USART1,del_part);
 //		while(USART_GetFlagStatus(USART1,USART_FLAG_TC)!=SET);//等待发送结束
 //		USART_SendData(USART1,freq);
 //		while(USART_GetFlagStatus(USART1,USART_FLAG_TC)!=SET);//等待发送结束
 	}
 	///////////////////////////////接收DAC控制字///////////////////////////////////////////////////////
-	if(USART_RX_BUF[0]==0x0d)				//若首字符为0x0d，则调节DAC电压
+	if(USART_RX_BUF[0]==0x0a)				//若首字符为0x0d，则调节DAC电压
 	{
 		for(i=1;i<HMI_REC_LEN;i++)		//遍历接收数组，将字符数组转为u16类型
 		{
@@ -256,6 +270,50 @@ void USART1_RXBUFF_HANDLE(void)
 //		while(USART_GetFlagStatus(USART1,USART_FLAG_TC)!=SET);//等待发送结束
 //		USART_SendData(USART1,dacval);
 //		while(USART_GetFlagStatus(USART1,USART_FLAG_TC)!=SET);//等待发送结束
+	}
+	///////////////////////////////接收AD9854频率控制字///////////////////////////////////////////////////////
+	if(USART_RX_BUF[0]==0x0d)				//若首字符为0x0d，则调节信号源频率
+	{
+		for(i=1;i<HMI_REC_LEN;i++)		//遍历接收数组，找到小数点位置
+		{
+			if(USART_RX_BUF[i]==0x2E)		//找到小数点
+			{
+				del_loc_D = i;							//将当前数组下标赋给del_loc
+				break;
+			}
+			if(i==HMI_REC_LEN-1)				//如果找不到小数点
+			{
+				del_loc_D = HMI_REC_LEN;		
+			}
+		}
+		//找到小数点后将整数和小数部分从字符数组转为浮点型
+		for(i=1;i<del_loc_D;i++)				//整数部分
+		{
+			int_part_D += (USART_RX_BUF[i] - 0x30)*pow(10.0,(float)(del_loc_D-i-1));
+		}
+		if(!del_loc_D)
+		{
+			del_part_D = USART_RX_BUF[del_loc_D+1] - 0x30;	//小数部分，只取一位小数
+		}
+		freq_D = (float)int_part_D+ (float)del_part_D/10.0;
+		freq_DDS = freq_D*1000.0;
+		
+//		USART_SendData(USART1,int_part_D);
+//		while(USART_GetFlagStatus(USART1,USART_FLAG_TC)!=SET);//等待发送结束
+		//将调节频率送给AD9854
+		AD9854_SetSine(freq_DDS,4095);//设置频率和幅值
+	}
+		///////////////////////////////接收PE4302控制字///////////////////////////////////////////////////////
+	if(USART_RX_BUF[0]==0x0E)				//若首字符为0x0E，则调节衰减器增益
+	{
+		for(i=1;i<HMI_REC_LEN;i++)		//遍历接收数组，将字符数组转为u16类型
+		{
+			PEdb += (USART_RX_BUF[i] - 0x30)*pow(10.0,(float)(HMI_REC_LEN-i-1));
+		}
+		PE4302Set(PEdb,1);		//设置PE4302衰减器衰减增益
+		
+		USART_SendData(USART1,PEdb);
+		while(USART_GetFlagStatus(USART1,USART_FLAG_TC)!=SET);//等待发送结束
 	}
 }
 

@@ -1,4 +1,4 @@
-/**********************************************************
+	/**********************************************************
                        康威电子
 										 
 功能：ADF4351正弦波点频输出，范围35M-4400M，步进0.1M，stm32f103rct6控制
@@ -42,7 +42,7 @@ void ADF_Output_GPIOInit(void)
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC, ENABLE);
 
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9|GPIO_Pin_10|GPIO_Pin_11|GPIO_Pin_12;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;//普通输出模式	
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;  //推挽输出
 	GPIO_Init(GPIOC, &GPIO_InitStructure);
@@ -53,13 +53,13 @@ void ADF_Input_GPIOInit(void)
 {
 	GPIO_InitTypeDef GPIO_InitStructure;
 	
-	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC, ENABLE);
+	RCC_APB2PeriphClockCmd(RCC_AHB1Periph_GPIOC, ENABLE);
 
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9|GPIO_Pin_11|GPIO_Pin_12;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;//普通输出模式	
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;  //推挽输出
-	GPIO_Init(GPIOD, &GPIO_InitStructure);
+	GPIO_Init(GPIOC, &GPIO_InitStructure);
 	
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN ; 

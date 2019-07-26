@@ -57,7 +57,7 @@ void Oled_Show(char DB, u32 Hz, u16 input_hz, u16 add_count);
 /////////////////////////变量定义///////////////////////////////////
 u16 dacval=500;		//DAC电压 0~3300 分别对应0~3V
 u16 pwmf=8000;			//PWM频率（KHz）
-u8 PEdb=5;					//衰减器衰减增益（DB）
+u8 PEdb=0;					//衰减器衰减增益（DB）
 
 void All_Init(void)
 {
@@ -70,7 +70,7 @@ void All_Init(void)
 	Dac1_Init();		 		//DAC通道1初始化			A4
 	DAC_SetChannel1Data(DAC_Align_12b_R,0);//初始值为0	
 	//Adc_Init();         //初始化ADC						A5
- 	TIM3_PWM_Init(84000/pwmf-1,1-1);	//84M/84=1Mhz的计数频率,重装载值500，所以PWM频率为 1M/500=2Khz.  		A6口
+ 	//TIM3_PWM_Init(84000/pwmf-1,1-1);	//84M/84=1Mhz的计数频率,重装载值500，所以PWM频率为 1M/500=2Khz.  		A6口
 	uart_init(115200);	//初始化串口波特率为115200
 	USART_DMACmd(USART1,USART_DMAReq_Tx,ENABLE);  //使能串口1的DMA发送 
 	USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);//开启中断，串口接收到数据中断
@@ -89,10 +89,13 @@ int main(void)
 {	
 	All_Init();
 	
+	delay_ms(1000);
+	
 	Dac1_Set_Vol(dacval);								//设置DAC输出电压
-	TIM_SetCompare1(TIM3,84000/pwmf/2);	//设置PWM输出脉宽
+	//TIM_SetCompare1(TIM3,84000/pwmf/2);	//设置PWM输出脉宽
 	AD9854_SetSine(40000000,4095);//设置频率和幅值
-	ADF4351WriteFreq(400);				//设置频率为400M
+	ADF4351_Init_some();
+	ADF4351WriteFreq(100.0);				//设置频率为100M
 	//PE43702Set(PEdb);		//设置PE43702衰减器衰减增益
 	PE4302Set(PEdb,1);		//设置PE4302衰减器衰减增益
 

@@ -24,6 +24,7 @@ void PE4302Set(unsigned char dB,u8 pe4302x)
 {
   unsigned char i;
   unsigned char Set_dB;
+	dB = dB<<1;
   dB = dB&0X3F;
   pe4302_CLK_0;
   if(pe4302x==1)

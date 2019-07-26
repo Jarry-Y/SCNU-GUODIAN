@@ -84,12 +84,7 @@ void KEY_task(void *pdata)
 		if(key>=0)
 		{
 			USART_SendData(USART1,key);
-		}
-		//芯片驱动测试
-		//AD9854_SetSine(40000000,4095);//设置频率和幅值
-		//ADF4351WriteFreq(400);				//设置频率为400M
-		PE4302Set(15,1);		//设置PE4302衰减器衰减增益
-		
-		delay_ms(5);                     //延时60ms
+		}	
+		delay_ms(60);                     //延时60ms
 	}
 }
