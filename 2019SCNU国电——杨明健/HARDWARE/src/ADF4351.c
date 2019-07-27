@@ -276,3 +276,30 @@ void ADF4351WriteFreq(float Fre)		//	(xx.x) M Hz
 //	WriteOneRegToADF4351((u32)(ADF4351_R4_ON + (Mul_Core<<20)));
 }
 
+/***********扫频************/
+//步进100KHz
+//fl:扫频最低频率	(xx.x MHz)
+//fh:扫谱最高频率	(xx.x MHz)
+//time:扫频时间		(s) 一般为1~5
+void sweep(float fl,float fh,u16 time)				
+{
+	float bw	=	fh-fl;	//扫频带宽
+	u16 times = bw/0.1;	//扫频次数
+	float freq = fl;					//输出频率
+	u16 interval = time*1000/times;//扫频间隔
+	while(1)
+	{
+		ADF4351_Init_some();
+		ADF4351WriteFreq(freq);				//设置频率
+		if(freq>=fh)									//如果目前频率大于等于最高频率，则重新扫频
+		{
+			freq = fl;
+		}
+		else
+		{
+			freq += 0.1;								//步进100KHz
+		}
+		delay_ms(interval);						//每次延时扫描间隔时间
+	}
+}
+

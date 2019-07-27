@@ -312,8 +312,8 @@ void USART1_RXBUFF_HANDLE(void)
 		}
 		PE4302Set(PEdb,1);		//设置PE4302衰减器衰减增益
 		
-		USART_SendData(USART1,PEdb);
-		while(USART_GetFlagStatus(USART1,USART_FLAG_TC)!=SET);//等待发送结束
+//		USART_SendData(USART1,PEdb);
+//		while(USART_GetFlagStatus(USART1,USART_FLAG_TC)!=SET);//等待发送结束
 	}
 }
 

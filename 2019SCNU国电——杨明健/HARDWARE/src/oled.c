@@ -24,6 +24,7 @@
 #include "stdlib.h"
 #include "oledfont.h"  	 
 #include "delay.h"
+#include "includes.h"
 
 void usdelay(u32 nus);
 
@@ -466,12 +467,12 @@ void Oled_task(void *pdata)
 	u32 Hz=0;
 	u16 input_hz = 2;
 	u16 add_count=10;
+//	sweep(100,200,1);
 	while(1)
 	{
-		//oled显示数据
-		Oled_Show(DB,Hz,input_hz,add_count);
-		delay_ms(20);                     //延时500ms
-		
+//		//oled显示数据
+//		Oled_Show(DB,Hz,input_hz,add_count);
+//		delay_ms(20);                     //延时500ms	
 	}
 }
 

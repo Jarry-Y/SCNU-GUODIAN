@@ -37,23 +37,6 @@ void led0_task(void *pdata)
 		delay_ms(500);  
 		GPIO_SetBits(GPIOC,GPIO_Pin_13);	   //LED0对应引脚GPIOC.13拉高，灭  等同LED0=1;
 		delay_ms(500);                     //延时500ms
-		
-//		//串口中断接收指令验证程序
-//		if(HMI_REC_LEN)
-//		{
-//			HMI_REC_LEN = 0;
-//			if(flag)
-//			{
-//				GPIO_ResetBits(GPIOC,GPIO_Pin_13);  //LED0对应引脚GPIOC.13拉低，亮  等同LED0=0;
-//				flag = 0;
-//			}
-//			else
-//			{
-//				GPIO_SetBits(GPIOC,GPIO_Pin_13);  //LED0对应引脚GPIOC.13拉低，亮  等同LED0=0;
-//				flag = 1;
-//			}
-//		}
-//		delay_ms(50);
 	}
 }
 

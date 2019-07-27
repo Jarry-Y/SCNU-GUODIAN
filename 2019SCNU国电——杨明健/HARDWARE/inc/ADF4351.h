@@ -18,6 +18,7 @@ void WriteToADF4351(u8 count, u8 *buf);
 void WriteOneRegToADF4351(u32 Regster);
 void ADF4351_Init_some(void);
 void ADF4351WriteFreq(float Fre);		//	(xx.x) M Hz
+void sweep(float fl,float fh,u16 time);	//ɨƵ
 
 #endif
 

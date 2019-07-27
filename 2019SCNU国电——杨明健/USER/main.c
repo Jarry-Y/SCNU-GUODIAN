@@ -51,6 +51,16 @@ OS_STK KEY_TASK_STK[KEY_STK_SIZE];
 //任务函数
 void KEY_task(void *pdata);
 
+//ADC任务
+//设置任务优先级
+#define ADC_TASK_PRIO       			5
+//设置任务堆栈大小
+#define ADC_STK_SIZE  					128
+//任务堆栈
+OS_STK ADC_TASK_STK[ADC_STK_SIZE];
+//任务函数
+void ADC_task(void *pdata);
+
 /////////////////////////函数声明///////////////////////////////////
 void Oled_Show(char DB, u32 Hz, u16 input_hz, u16 add_count);
 
@@ -69,7 +79,7 @@ void All_Init(void)
 	KEY_Init();
 	Dac1_Init();		 		//DAC通道1初始化			A4
 	DAC_SetChannel1Data(DAC_Align_12b_R,0);//初始值为0	
-	//Adc_Init();         //初始化ADC						A5
+	Adc_Init();         //初始化ADC						A5
  	//TIM3_PWM_Init(84000/pwmf-1,1-1);	//84M/84=1Mhz的计数频率,重装载值500，所以PWM频率为 1M/500=2Khz.  		A6口
 	uart_init(115200);	//初始化串口波特率为115200
 	USART_DMACmd(USART1,USART_DMAReq_Tx,ENABLE);  //使能串口1的DMA发送 
@@ -110,9 +120,10 @@ void start_task(void *pdata)
 	pdata = pdata; 
 	OS_ENTER_CRITICAL();			//进入临界区(无法被中断打断)    
  	OSTaskCreate(led0_task,(void *)0,(OS_STK*)&LED0_TASK_STK[LED0_STK_SIZE-1],LED0_TASK_PRIO);						   
- 	//OSTaskCreate(Oled_task,(void *)0,(OS_STK*)&OLED_TASK_STK[OLED_STK_SIZE-1],OLED_TASK_PRIO);	 	
- 	//OSTaskCreate(HMI_task,(void *)0,(OS_STK*)&HMI_TASK_STK[HMI_STK_SIZE-1],HMI_TASK_PRIO);	 
-	OSTaskCreate(KEY_task,(void *)0,(OS_STK*)&KEY_TASK_STK[KEY_STK_SIZE-1],KEY_TASK_PRIO);	 	
+// 	OSTaskCreate(Oled_task,(void *)0,(OS_STK*)&OLED_TASK_STK[OLED_STK_SIZE-1],OLED_TASK_PRIO);	 	
+// 	OSTaskCreate(HMI_task,(void *)0,(OS_STK*)&HMI_TASK_STK[HMI_STK_SIZE-1],HMI_TASK_PRIO);	 
+	OSTaskCreate(KEY_task,(void *)0,(OS_STK*)&KEY_TASK_STK[KEY_STK_SIZE-1],KEY_TASK_PRIO);	
+//	OSTaskCreate(ADC_task,(void *)0,(OS_STK*)&ADC_TASK_STK[ADC_STK_SIZE-1],ADC_TASK_PRIO);						    	
 	OSTaskSuspend(START_TASK_PRIO);	//挂起起始任务.
 	OS_EXIT_CRITICAL();				//退出临界区(可以被中断打断)
 } 
