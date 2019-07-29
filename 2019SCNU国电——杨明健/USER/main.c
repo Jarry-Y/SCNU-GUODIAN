@@ -85,7 +85,8 @@ void All_Init(void)
 	USART_DMACmd(USART1,USART_DMAReq_Tx,ENABLE);  //使能串口1的DMA发送 
 	USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);//开启中断，串口接收到数据中断
 	//PE_GPIO_Init();			//PE43702端口初始化
-	AD9854_Init();		//初始化AD9854
+//	AD9854_Init();		//初始化AD9854
+	Init_AD9959();		//初始化AD9959
 	ADF4351Init();		//初始化ADF4351
 	PE4302_Init();			//初始化PE4302
 //	OLED_Init();
@@ -103,7 +104,8 @@ int main(void)
 	
 	Dac1_Set_Vol(dacval);								//设置DAC输出电压
 	//TIM_SetCompare1(TIM3,84000/pwmf/2);	//设置PWM输出脉宽
-	AD9854_SetSine(40000000,4095);//设置频率和幅值
+//	AD9854_SetSine(40000000,4095);//设置频率和幅值
+	Write_frequence(0,10000000);			//设置AD9959通道0输出频率10M
 	ADF4351_Init_some();
 	ADF4351WriteFreq(100.0);				//设置频率为100M
 	//PE43702Set(PEdb);		//设置PE43702衰减器衰减增益

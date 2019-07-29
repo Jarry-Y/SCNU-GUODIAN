@@ -209,10 +209,10 @@ void USART1_RXBUFF_HANDLE(void)
 	u16 int_part_D;		//频率整数部分（MHz）	DDS
 	u8 	del_part_D;		//频率小数部分（MHz）	DDS
 	u16 dacval;				//dac电压（mV）
-	float freq = 0;							//ADF4351信号源所需调节频率
-	float freq_D = 0;						//AD9851信号源频率
-	ulong freq_DDS = 0;
+	float freq = 0;		//ADF4351信号源所需调节频率
+	u32 freq_D = 0;		//AD9959信号源频率
 	u8 	PEdb;					//PE4302衰减db
+	u8  unit_D = 0;		//AD9959频率单位(M、K、H(Hz))
 	
 	del_loc = 0;
 	int_part = 0;
@@ -220,6 +220,7 @@ void USART1_RXBUFF_HANDLE(void)
 	dacval = 0;
 	int_part_D = 0;
 	del_part_D = 0;
+	del_loc_D = 0;
 	PEdb = 0;
 	///////////////////////////////接收ADF4351频率控制字///////////////////////////////////////////////////////
 	if(USART_RX_BUF[0]==0x0f)				//若首字符为0x0f，则调节信号源频率
@@ -241,7 +242,7 @@ void USART1_RXBUFF_HANDLE(void)
 		{
 			int_part += (USART_RX_BUF[i] - 0x30)*pow(10.0,(float)(del_loc-i-1));
 		}
-		if(!del_loc)
+		if(del_loc != HMI_REC_LEN)
 		{
 			del_part = USART_RX_BUF[del_loc+1] - 0x30;	//小数部分，只取一位小数
 		}
@@ -271,7 +272,7 @@ void USART1_RXBUFF_HANDLE(void)
 //		USART_SendData(USART1,dacval);
 //		while(USART_GetFlagStatus(USART1,USART_FLAG_TC)!=SET);//等待发送结束
 	}
-	///////////////////////////////接收AD9854频率控制字///////////////////////////////////////////////////////
+	///////////////////////////////接收AD9959频率控制字///////////////////////////////////////////////////////
 	if(USART_RX_BUF[0]==0x0d)				//若首字符为0x0d，则调节信号源频率
 	{
 		for(i=1;i<HMI_REC_LEN;i++)		//遍历接收数组，找到小数点位置
@@ -281,9 +282,9 @@ void USART1_RXBUFF_HANDLE(void)
 				del_loc_D = i;							//将当前数组下标赋给del_loc
 				break;
 			}
-			if(i==HMI_REC_LEN-1)				//如果找不到小数点
+			if(i==HMI_REC_LEN-2)				//如果找不到小数点
 			{
-				del_loc_D = HMI_REC_LEN;		
+				del_loc_D = HMI_REC_LEN-1;		
 			}
 		}
 		//找到小数点后将整数和小数部分从字符数组转为浮点型
@@ -291,17 +292,35 @@ void USART1_RXBUFF_HANDLE(void)
 		{
 			int_part_D += (USART_RX_BUF[i] - 0x30)*pow(10.0,(float)(del_loc_D-i-1));
 		}
-		if(!del_loc_D)
+		if(del_loc_D != HMI_REC_LEN-1)	//如果有小数点
 		{
 			del_part_D = USART_RX_BUF[del_loc_D+1] - 0x30;	//小数部分，只取一位小数
 		}
-		freq_D = (float)int_part_D+ (float)del_part_D/10.0;
-		freq_DDS = freq_D*1000.0;
+		//接收频率单位
+		unit_D = USART_RX_BUF[HMI_REC_LEN-1];
+		if(unit_D == 0x4d)				//单位MHz
+		{
+			freq_D = int_part_D*1000000+ del_part_D*100000;
+		}
+		else if(unit_D == 0x4b)		//单位KHz
+		{
+			freq_D = int_part_D*1000+ del_part_D*100;
+		}
+		else											//单位Hz
+		{
+			freq_D = int_part_D;
+		}
+		//将调节频率送给AD9959
+		Write_frequence(0,freq_D);			//设置AD9959通道0输出频率
 		
-//		USART_SendData(USART1,int_part_D);
+//		USART_SendData(USART1,freq_D>>24);
 //		while(USART_GetFlagStatus(USART1,USART_FLAG_TC)!=SET);//等待发送结束
-		//将调节频率送给AD9854
-		AD9854_SetSine(freq_DDS,4095);//设置频率和幅值
+//		USART_SendData(USART1,freq_D>>16);
+//		while(USART_GetFlagStatus(USART1,USART_FLAG_TC)!=SET);//等待发送结束
+//		USART_SendData(USART1,freq_D>>8);
+//		while(USART_GetFlagStatus(USART1,USART_FLAG_TC)!=SET);//等待发送结束
+//		USART_SendData(USART1,freq_D);
+//		while(USART_GetFlagStatus(USART1,USART_FLAG_TC)!=SET);//等待发送结束
 	}
 		///////////////////////////////接收PE4302控制字///////////////////////////////////////////////////////
 	if(USART_RX_BUF[0]==0x0E)				//若首字符为0x0E，则调节衰减器增益
