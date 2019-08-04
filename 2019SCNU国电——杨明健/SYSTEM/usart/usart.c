@@ -11,6 +11,13 @@
 //淘宝店铺：http://mcudev.taobao.com
 ////////////////////////////////////////////////////////////////////////////////// 	  
  
+u8 HMI_READY = 0;						//HMI串口屏数据透传就绪标志
+u8 HMI_REC_LEN = 0;					//HMI串口屏接收指令长度
+u8 HMI_ADDT_ORDER = 0;			//HMI串口屏数据透传标志
+u8 PLL_SWEEP_ENABLE	=	0;		//锁相环扫频使能
+u8 PLL_SWEEP_TIME	=	0;			//锁相环扫频时间
+u8 DDS_SWEEP_ENABLE	=	0;		//DDS扫频时间
+u8 DDS_SWEEP_TIME	=	0;			//DDS扫频时间
 
 //////////////////////////////////////////////////////////////////
 //加入以下代码,支持printf函数,而不需要选择use MicroLIB	  
@@ -49,8 +56,6 @@ u16 USART_RX_STA = 0;       //接收状态标记
 u16 USART_RX_STA1 = 0;      //接收状态标记1	
 u16	USART_RX_CNT = 0;				//接收计数器
 u16 USART_RX_CNT1 = 0;      //接收计数器1	
-u8 HMI_READY = 0;						//HMI串口屏数据透传就绪标志
-u8 HMI_REC_LEN = 0;					//HMI串口屏接收指令长度
 
 //初始化IO 串口1 
 //bound:波特率
@@ -213,6 +218,7 @@ void USART1_RXBUFF_HANDLE(void)
 	u32 freq_D = 0;		//AD9959信号源频率
 	u8 	PEdb;					//PE4302衰减db
 	u8  unit_D = 0;		//AD9959频率单位(M、K、H(Hz))
+	u16 A_DDS = 0;		//AD9959输出电压幅度
 	
 	del_loc = 0;
 	int_part = 0;
@@ -322,6 +328,19 @@ void USART1_RXBUFF_HANDLE(void)
 //		USART_SendData(USART1,freq_D);
 //		while(USART_GetFlagStatus(USART1,USART_FLAG_TC)!=SET);//等待发送结束
 	}
+	///////////////////////////////接收AD9959幅度控制字///////////////////////////////////////////////////////
+	if(USART_RX_BUF[0]==0x0b)				//若首字符为0x0B，则调节AD9959输出幅度
+	{
+		for(i=1;i<HMI_REC_LEN;i++)		//遍历接收数组，将字符数组转为u16类型
+		{
+			A_DDS += (USART_RX_BUF[i] - 0x30)*pow(10.0,(float)(HMI_REC_LEN-i-1));
+		}
+		A_DDS*=2;			//0~1023 对应0-500+mA电流
+		Write_Amplitude(0,A_DDS);
+		
+//		USART_SendData(USART1,A_DDS);
+//		while(USART_GetFlagStatus(USART1,USART_FLAG_TC)!=SET);//等待发送结束
+	}
 		///////////////////////////////接收PE4302控制字///////////////////////////////////////////////////////
 	if(USART_RX_BUF[0]==0x0E)				//若首字符为0x0E，则调节衰减器增益
 	{
@@ -333,6 +352,38 @@ void USART1_RXBUFF_HANDLE(void)
 		
 //		USART_SendData(USART1,PEdb);
 //		while(USART_GetFlagStatus(USART1,USART_FLAG_TC)!=SET);//等待发送结束
+	}		
+	///////////////////////////////接收数据透传指令///////////////////////////////////////////////////////
+	if(USART_RX_BUF[0]==0x00)				//若首字符为0x00，则开始数据透传
+	{
+		HMI_ADDT_ORDER = 1;
+	}	
+	//结束透传
+	if(USART_RX_BUF[0]==0x03)				//若首字符为0x03，则结束数据透传
+	{
+		HMI_ADDT_ORDER = 0;
+	}
+	///////////////////////////////接收锁相环扫频指令///////////////////////////////////////////////////////	
+	if(USART_RX_BUF[0]==0x01)				//若首字符为0x01，则开始锁相环扫频输出
+	{
+		PLL_SWEEP_ENABLE = 1;
+	}
+	PLL_SWEEP_TIME = USART_RX_BUF[1] - 0x30;
+	//结束扫频
+	if(USART_RX_BUF[0]==0x02)				//若首字符为0x02，则结束锁相环扫频输出
+	{
+		PLL_SWEEP_ENABLE = 0;
+	}
+		///////////////////////////////接收DDS扫频指令///////////////////////////////////////////////////////
+	if(USART_RX_BUF[0]==0X04)				//若首字符为0x04，则开始DDS扫频输出
+	{
+		DDS_SWEEP_ENABLE = 1;
+	}
+	DDS_SWEEP_TIME = USART_RX_BUF[1] - 0x30;
+	//结束扫频
+	if(USART_RX_BUF[0]==0X05)				//若首字符为0x05，则结束DDS扫频输出
+	{
+		DDS_SWEEP_ENABLE = 0;
 	}
 }
 

@@ -35,7 +35,7 @@ void Oled_task(void *pdata);
 //设置任务优先级
 #define HMI_TASK_PRIO       			8 
 //设置任务堆栈大小
-#define HMI_STK_SIZE  					128
+#define HMI_STK_SIZE  					256
 //任务堆栈
 OS_STK HMI_TASK_STK[HMI_STK_SIZE];
 //任务函数
@@ -55,7 +55,7 @@ void KEY_task(void *pdata);
 //设置任务优先级
 #define ADC_TASK_PRIO       			5
 //设置任务堆栈大小
-#define ADC_STK_SIZE  					128
+#define ADC_STK_SIZE  					256
 //任务堆栈
 OS_STK ADC_TASK_STK[ADC_STK_SIZE];
 //任务函数
@@ -89,6 +89,7 @@ void All_Init(void)
 	Init_AD9959();		//初始化AD9959
 	ADF4351Init();		//初始化ADF4351
 	PE4302_Init();			//初始化PE4302
+	InitPll();					//初始化ADF4002
 //	OLED_Init();
 //	OLED_Clear();
 	OSInit();   
@@ -99,15 +100,15 @@ void All_Init(void)
 int main(void)
 {	
 	All_Init();
-	
-	delay_ms(1000);
-	
+	delay_ms(500);
+
 	Dac1_Set_Vol(dacval);								//设置DAC输出电压
-	//TIM_SetCompare1(TIM3,84000/pwmf/2);	//设置PWM输出脉宽
+//TIM_SetCompare1(TIM3,84000/pwmf/2);	//设置PWM输出脉宽
 //	AD9854_SetSine(40000000,4095);//设置频率和幅值
 	Write_frequence(0,10000000);			//设置AD9959通道0输出频率10M
 	ADF4351_Init_some();
 	ADF4351WriteFreq(100.0);				//设置频率为100M
+	RDivideTest(0X64);							//设置ADF4002 R分频数为100
 	//PE43702Set(PEdb);		//设置PE43702衰减器衰减增益
 	PE4302Set(PEdb,1);		//设置PE4302衰减器衰减增益
 
@@ -122,10 +123,10 @@ void start_task(void *pdata)
 	pdata = pdata; 
 	OS_ENTER_CRITICAL();			//进入临界区(无法被中断打断)    
  	OSTaskCreate(led0_task,(void *)0,(OS_STK*)&LED0_TASK_STK[LED0_STK_SIZE-1],LED0_TASK_PRIO);						   
-// 	OSTaskCreate(Oled_task,(void *)0,(OS_STK*)&OLED_TASK_STK[OLED_STK_SIZE-1],OLED_TASK_PRIO);	 	
-// 	OSTaskCreate(HMI_task,(void *)0,(OS_STK*)&HMI_TASK_STK[HMI_STK_SIZE-1],HMI_TASK_PRIO);	 
-	OSTaskCreate(KEY_task,(void *)0,(OS_STK*)&KEY_TASK_STK[KEY_STK_SIZE-1],KEY_TASK_PRIO);	
-//	OSTaskCreate(ADC_task,(void *)0,(OS_STK*)&ADC_TASK_STK[ADC_STK_SIZE-1],ADC_TASK_PRIO);						    	
+ 	OSTaskCreate(Oled_task,(void *)0,(OS_STK*)&OLED_TASK_STK[OLED_STK_SIZE-1],OLED_TASK_PRIO);	 	
+ 	//OSTaskCreate(HMI_task,(void *)0,(OS_STK*)&HMI_TASK_STK[HMI_STK_SIZE-1],HMI_TASK_PRIO);	 
+	//OSTaskCreate(KEY_task,(void *)0,(OS_STK*)&KEY_TASK_STK[KEY_STK_SIZE-1],KEY_TASK_PRIO);	
+	//OSTaskCreate(ADC_task,(void *)0,(OS_STK*)&ADC_TASK_STK[ADC_STK_SIZE-1],ADC_TASK_PRIO);						    	
 	OSTaskSuspend(START_TASK_PRIO);	//挂起起始任务.
 	OS_EXIT_CRITICAL();				//退出临界区(可以被中断打断)
 } 

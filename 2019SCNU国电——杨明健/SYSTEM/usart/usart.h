@@ -1,6 +1,5 @@
 #ifndef __USART_H
 #define __USART_H
-#include "stdio.h"	
 #include "stm32f4xx_conf.h"
 #include "sys.h" 
 //////////////////////////////////////////////////////////////////////////////////	 
@@ -34,6 +33,9 @@ extern u16 USART_RX_STA;         		//接收状态标记
 extern u8  HMI_READY ;							//HMI串口屏数据透传就绪标志
 extern u8 HMI_REC_LEN;							//HMI串口屏接收指令长度
 void USART1_RXBUFF_HANDLE(void);		//串口1接收字符数组处理函数
+extern u8 HMI_ADDT_ORDER;						//HMI串口屏数据透传标志
+extern u8 PLL_SWEEP_ENABLE;					//锁相环扫频使能
+extern u8 PLL_SWEEP_TIME;						//锁相环扫频时间
 //如果想串口中断接收，请不要注释以下宏定义
 void uart_init(u32 bound);
 #endif

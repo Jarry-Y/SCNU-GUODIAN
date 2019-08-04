@@ -77,6 +77,7 @@ int KEY_Scan(void)
 void KEY_task(void *pdata)
 {	 
 	int key = -1;
+	u16 test;
 	while(1)
 	{
 		//¼üÅÌÉ¨Ãè

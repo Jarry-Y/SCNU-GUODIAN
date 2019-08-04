@@ -1,10 +1,10 @@
 #include "adc.h"
 #include "delay.h"		 
+#include "includes.h"		
 //////////////////////////////////////////////////////////////////////////////////	 
 //STM32F4工程模板-库函数版本
 //淘宝店铺：http://mcudev.taobao.com									  
 ////////////////////////////////////////////////////////////////////////////////// 	
-
 
 //初始化ADC															   
 void  Adc_Init(void)
@@ -156,24 +156,36 @@ void ADC_task(void *pdata)
 	u16 adcx;
 	float temp;
 	u16 del_part;	//小数部分
+	u16 cnt=0;		//接收数据计数
+	u16 i;
 	while(1)
 	{
-		adcx=Get_Adc2_Average(ADC_Channel_14,20);	//获取通道5的转换值，20次取平均
-		temp=(float)adcx*(3.3/4096);          	//获取计算后的带小数的实际电压值，比如3.1111
-		adcx=temp;                            	//赋值整数部分给adcx变量，因为adcx为u16整形
-		USART_SendData(USART1,adcx+0x30);
-		while(USART_GetFlagStatus(USART1,USART_FLAG_TC)!=SET);//等待发送结束
-		USART_SendData(USART1,'.');
-		while(USART_GetFlagStatus(USART1,USART_FLAG_TC)!=SET);//等待发送结束
-		temp-=adcx;                           	//把已经显示的整数部分去掉，留下小数部分，比如3.1111-3=0.1111
-		del_part=temp*1000;                           	//小数部分乘以1000，例如：0.1111就转换为111.1，相当于保留三位小数。
-		USART_SendData(USART1,del_part/100+0x30);
-		while(USART_GetFlagStatus(USART1,USART_FLAG_TC)!=SET);//等待发送结束
-		USART_SendData(USART1,del_part/10-del_part/100*10+0x30);
-		while(USART_GetFlagStatus(USART1,USART_FLAG_TC)!=SET);//等待发送结束
-		USART_SendData(USART1,del_part%10+0x30);
-		while(USART_GetFlagStatus(USART1,USART_FLAG_TC)!=SET);//等待发送结束
-		delay_ms(250);	                 				//延时250ms
+		if(PLL_SWEEP_ENABLE)
+		{
+			adcx=Get_Adc2_Average(ADC_Channel_14,1);	//获取通道5的转换值，20次取平均
+			temp=(float)adcx*(3.3/4096);          	//获取计算后的带小数的实际电压值，比如3.1111
+	//		adcx=temp;                            	//赋值整数部分给adcx变量，因为adcx为u16整形
+	//		temp-=adcx;                           	//把已经显示的整数部分去掉，留下小数部分，比如3.1111-3=0.1111
+	//		del_part=temp*1000;                    	//小数部分乘以1000，例如：0.1111就转换为111.1，相当于保留三位小数。
+			Adc_data[cnt++]=temp*255.0/3.3;
+			if(cnt==200)
+			{
+				for(i=0;i<200;i++)
+				{
+					USART_SendData(USART1,Adc_data[i]);
+					while(USART_GetFlagStatus(USART1,USART_FLAG_TC)!=SET);//等待发送结束
+				}
+			}
+			if(cnt>=200)
+			{
+				cnt = 0;
+			}
+			delay_ms(interval);	 		
+		}
+		else
+		{
+			delay_ms(100);
+		}
 	}
 }
 

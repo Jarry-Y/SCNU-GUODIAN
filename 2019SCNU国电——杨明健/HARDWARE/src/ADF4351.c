@@ -15,6 +15,7 @@ https://shop110336474.taobao.com/?spm=a230r.7195193.1997079397.2.Ic3MRJ
 **********************************************************/
 #include "ADF4351.h"
 #include "delay.h"
+#include "includes.h"
 
 //#define 
 #define ADF4351_R0			((u32)0X2C8018)
@@ -34,6 +35,8 @@ https://shop110336474.taobao.com/?spm=a230r.7195193.1997079397.2.Ic3MRJ
 #define ADF4351_PD_ON		((u32)0X10E42)
 #define ADF4351_PD_OFF	((u32)0X10E02)
 
+u16 interval=0;			//扫频间隔
+u8 Adc_data[320];		//ADC采集回的数据
 
 void ADF_Output_GPIOInit(void)
 {
@@ -41,7 +44,7 @@ void ADF_Output_GPIOInit(void)
 	
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC, ENABLE);
 
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9|GPIO_Pin_10|GPIO_Pin_11|GPIO_Pin_12;
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0|GPIO_Pin_1|GPIO_Pin_2|GPIO_Pin_3;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;//普通输出模式	
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;  //推挽输出
@@ -281,25 +284,103 @@ void ADF4351WriteFreq(float Fre)		//	(xx.x) M Hz
 //fl:扫频最低频率	(xx.x MHz)
 //fh:扫谱最高频率	(xx.x MHz)
 //time:扫频时间		(s) 一般为1~5
-void sweep(float fl,float fh,u16 time)				
+void sweep(float fl,float fh)				
 {
 	float bw	=	fh-fl;	//扫频带宽
-	u16 times = bw/0.1;	//扫频次数
-	float freq = fl;					//输出频率
-	u16 interval = time*1000/times;//扫频间隔
+	u16 times = bw*10;	//扫频次数
+	float freq = fh;		//输出频率
+	//AD采集
+	u16 adcx;
+	float temp;
+	u16 del_part;	//小数部分
+	u16 cnt=0;		//接收数据计数
+	int i;
+	//HMI发数据
+	u8 cmd[]="add 1,0,";
+	u8 buf[3] = {0}; 
+	u8 order[11];
+	
 	while(1)
 	{
-		ADF4351_Init_some();
-		ADF4351WriteFreq(freq);				//设置频率
-		if(freq>=fh)									//如果目前频率大于等于最高频率，则重新扫频
+		interval = PLL_SWEEP_TIME*1000/times;
+		if(PLL_SWEEP_ENABLE)
 		{
-			freq = fl;
+			ADF4351_Init_some();
+			ADF4351WriteFreq(freq);				//设置频率
+			if(freq<=fl)									//如果目前频率小于等于最低频率，则重新扫频
+			{
+				freq = fh;
+			}
+			else
+			{
+				freq -= 0.1;								//步进100KHz
+			}
+			
+			//AD采样
+			adcx=Get_Adc2_Average(ADC_Channel_14,1);	//获取通道5的转换值，20次取平均
+			temp=(float)adcx*(3.3/4096);          	//获取计算后的带小数的实际电压值，比如3.1111
+			Adc_data[cnt]=temp*255.0/3.3;
+//			USART_SendData(USART1,Adc_data[cnt]);
+//			while(USART_GetFlagStatus(USART1,USART_FLAG_TC)!=SET);//等待发送结束
+			
+			//HMI发数据
+			if(HMI_ADDT_ORDER ==1)
+			{
+				//u8转字符数组
+				buf[2]=Adc_data[cnt]/100 + 0x30;
+				buf[1]=Adc_data[cnt]/10 - Adc_data[cnt]/100*10 +0x30;
+				buf[0]=Adc_data[cnt]%10	+ 0x30;
+//				for(i=2;i>=0;i--)
+//				{
+//					USART_SendData(USART1,buf[i]);
+//					while(USART_GetFlagStatus(USART1,USART_FLAG_TC)!=SET);//等待发送结束
+//				}
+//				USART_SendData(USART1,buf[0]);
+//				while(USART_GetFlagStatus(USART1,USART_FLAG_TC)!=SET);//等待发送结束
+				for(i=0;i<11;i++)
+				{
+					if(i<8)
+					{
+						order[i]=cmd[i];
+					}
+					else
+					{
+						order[i]=buf[10-i];
+					}
+//					USART_SendData(USART1,order[i]);
+//					while(USART_GetFlagStatus(USART1,USART_FLAG_TC)!=SET);//等待发送结束
+				}
+				
+				HMI_sendorder(order,sizeof(order));	
+				while(1)
+				{
+					if(DMA_GetFlagStatus(DMA2_Stream7,DMA_FLAG_TCIF7)!=RESET)//等待DMA2_Steam7传输完成
+					{ 
+						DMA_ClearFlag(DMA2_Stream7,DMA_FLAG_TCIF7);	//清除DMA2_Steam7传输完成标志
+						break;
+					}	
+					else																					//如果未传输完数据，则让出CPU
+					{
+						delay_us(1);
+					}
+				}
+			}
+			
+			if(cnt>=times)
+			{
+				cnt = 0;
+			}
+			else
+			{
+				cnt++;
+			}
+			delay_ms(interval);						//每次延时扫描间隔时间
 		}
 		else
 		{
-			freq += 0.1;								//步进100KHz
+			freq = fl;
+			delay_ms(50);
 		}
-		delay_ms(interval);						//每次延时扫描间隔时间
 	}
 }
 
